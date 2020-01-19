@@ -1,14 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from collections import namedtuple
-from contextlib import contextmanager
-import paho.mqtt.client as mqtt  # import the client1
 import time
 import random
 import json
-
-
-RGB = namedtuple('RGB', ['R', 'G', 'B'])
+from contextlib import contextmanager
+from color import RGB
+from paho.mqtt import client as mqtt  # import the client1
 
 
 class Client:
@@ -71,7 +68,7 @@ class LedController:
 
 
 @contextmanager
-def LED(topic):
+def LED(topic='pochang/iot/neopixel'):
     '自動建立連線, 自動關閉'
     controller = LedController()
     controller.open(topic)
@@ -82,7 +79,7 @@ def LED(topic):
 
 
 if __name__ == '__main__':
-    with LED(topic='pochang/iot/neopixel') as leds:
+    with LED() as leds:
         idx = 0
         while True:
             idx += 1
