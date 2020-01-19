@@ -28,15 +28,23 @@ def search(words):
         data['since_id'] = since_id
     statuses = api.GetSearch(**data)
 
-    # extract max_id
+    # 取得最後一筆的 id
     ids = map(lambda status: status.id, statuses)
     since_id = max(ids, default=since_id)
-    return statuses
+
+    # 依關鍵字分類
+    return list(
+
+        (word, list(filter(lambda status: word in status.text, statuses)))
+        for word in words
+    )
 
 while True:
-    statuses = search(keywords)
-    for status in statuses:
-        print(status.id, status.created_at, '\n', status.text)
+    result = search(keywords)
+    for word, statuses in result:
+        print('[{}]'.format(word))
+        for status in statuses:
+            print('\t', status.text)
 
     time.sleep(20)
     print('\n' * 5)
