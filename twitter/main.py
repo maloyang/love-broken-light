@@ -2,7 +2,6 @@ import twitter
 import time
 from credentials import ACCESS_TOKEN_KEY, ACCESS_TOKEN_SECRET, CONSUMER_KEY, CONSUMER_SECRET
 from color import COLOR, normalize
-from functools import partial
 from mqtt import open_controller
 
 api = twitter.Api(
@@ -43,7 +42,9 @@ def search(words):
     )
 
 
-softer = partial(normalize, value=25)
+def softer(color):
+    return normalize(color, 25)
+
 colors = [COLOR.RED, COLOR.GREEN, COLOR.BLUE, COLOR.YELLOW, COLOR.CYAN, COLOR.MAGENTA]
 colors = list(map(softer, colors))
 
