@@ -1,9 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+from collections import namedtuple
 import paho.mqtt.client as mqtt  # import the client1
 import time
 import random
 import json
+
+
+RGB = namedtuple('RGB', ['R', 'G', 'B'])
 
 
 class Client:
@@ -48,8 +52,9 @@ class LedController:
         print('cmd: ', neo_cmd)
         self.client.publish(self.topic, neo_cmd)
 
-    def update(self, index, R, G, B):
-        self.lights[index % 8] = [R, G, B]
+    def update(self, index, rgb):
+        assert isinstance(rgb, RGB)
+        self.lights[index % 8] = rgb
 
 
 leds = LedController(topic='pochang/iot/neopixel')
@@ -62,6 +67,6 @@ while True:
     neo_light = [[0, 0, 0]] * 8
     v = 5
     for i in range(1, 5):
-        leds.update(idx + i, v * i, 0, v * i)
+        leds.update(idx, RGB(v * i, 0, v * i))
     leds.flush()
     time.sleep(2)
