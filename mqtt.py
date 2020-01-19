@@ -1,10 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import paho.mqtt.client as mqtt  #import the client1
+import paho.mqtt.client as mqtt  # import the client1
 import time
-
-import time
-from struct import *
 import random
 import json
 
