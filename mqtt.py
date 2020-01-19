@@ -6,30 +6,34 @@ import random
 import json
 
 
-def on_connect(client, userdata, flags, rc):
-    m = "Connected flags" + str(flags) + ", result code " + str(rc) + ", client_id  " + str(client)
-    print(m)
+class Client:
+    broker = ('broker.hivemq.com', 1883, 60)
 
-# some online free broker:
-#   iot.eclipse.org
-#   test.mosquitto.org
-#   broker.hivemq.com
-broker_address = "broker.hivemq.com"
+    def __init__(self):
+        self.client = mqtt.Client()
+        self.client.on_connect = self.on_connect
+
+    def on_connect(self, client, userdata, flags, rc):
+        m = 'Connected flags' + str(flags) + ', result code ' + str(rc) + ', client_id  ' + str(client)
+        print(m)
+
+    def connect(self):
+        self.client.connect(*self.broker)
+        # 有自己的while loop，所以call loop_start()，不用loop_forever
+        self.client.loop_start()
+        time.sleep(2)
+        print('loop start')
+
+    def publish(self, topic, data):
+        self.client.publish(topic, data)
+
 TOPIC_BASE = 'pochang/iot'
-topic_light = TOPIC_BASE + "/light"
-topic_neopixel = TOPIC_BASE + "/neopixel"
+topic_light = TOPIC_BASE + '/light'
+topic_neopixel = TOPIC_BASE + '/neopixel'
 
-client1 = mqtt.Client()  # create new instance
-client1.on_connect = on_connect  # attach function to callback
+client = Client()
+client.connect()
 
-time.sleep(1)
-client1.connect(broker_address, 1883, 60)  # connect to broker
-
-# client1.loop_forever()
-# 有自己的while loop，所以call loop_start()，不用loop_forever
-client1.loop_start()  # start the loop
-time.sleep(2)
-print("loop start")
 idx = 0
 while True:
     idx += 1
@@ -41,5 +45,5 @@ while True:
     neo_cmd = {'light': neo_light, 'delay': 0}
     neo_cmd = json.dumps(neo_cmd)
     print('cmd: ', neo_cmd)
-    client1.publish(topic_neopixel, neo_cmd)
+    client.publish(topic_neopixel, neo_cmd)
     time.sleep(2)
