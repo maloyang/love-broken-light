@@ -4,7 +4,7 @@ import time
 import random
 import json
 from contextlib import contextmanager
-from color import RGB
+from color import RGB, COLOR
 from paho.mqtt import client as mqtt  # import the client1
 
 
@@ -37,6 +37,19 @@ class Client:
         self.client.disconnect()
 
 
+class LED:
+    def __init__(self, controller, index):
+        self.controller = controller
+        self.index = index
+
+    def on(self, rgb):
+        assert isinstance(rgb, RGB)
+        self.controller.update(self.index, rgb)
+
+    def off(self):
+        self.controller.update(self.index, COLOR.OFF)
+
+
 class LedController:
     def _reset(self):
         '重置狀態'
@@ -47,6 +60,7 @@ class LedController:
         self.topic = topic
         self.client = Client()
         self.client.connect()
+        self._reset()
 
     def flush(self):
         '送出燈號狀態'
@@ -66,9 +80,14 @@ class LedController:
         self.flush()
         self.client.disconnect()
 
+    def leds(self):
+        '取出單獨的 led 控制器'
+        for index, _ in enumerate(self.lights):
+            yield LED(controller=self, index=index)
+
 
 @contextmanager
-def LED(topic='pochang/iot/neopixel'):
+def open_controller(topic):
     '自動建立連線, 自動關閉'
     controller = LedController()
     controller.open(topic)
@@ -79,13 +98,13 @@ def LED(topic='pochang/iot/neopixel'):
 
 
 if __name__ == '__main__':
-    with LED() as leds:
-        idx = 0
+    v = 5
+    with open_controller(topic='pochang/iot/neopixel') as controller:
+        leds = list(controller.leds())
         while True:
-            idx += 1
-            leds._reset()
-            v = 5
-            for i in range(1, 5):
-                leds.update(idx + i, RGB(v * i, 0, v * i))
-            leds.flush()
+            for i in range(5):
+                leds[i].on(RGB(v * i, 0, v * i))
+            controller.flush()
+            controller._reset()
             time.sleep(2)
+            leds.append(leds.pop(0))
