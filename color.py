@@ -13,3 +13,12 @@ class COLOR:
     MAGENTA = RGB(255, 0, 255)
     WHITE = RGB(255, 255, 255)
     OFF = RGB(0, 0, 0)
+
+
+def normalize(rgb, value):
+    total = sum(rgb)
+    ratio = value / total
+
+    return RGB(
+        *map(lambda c: int(c * ratio), rgb)
+    )

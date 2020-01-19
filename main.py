@@ -1,7 +1,8 @@
 import twitter
 import time
 from credentials import ACCESS_TOKEN_KEY, ACCESS_TOKEN_SECRET, CONSUMER_KEY, CONSUMER_SECRET
-from color import COLOR
+from color import COLOR, normalize
+from functools import partial
 from mqtt import open_controller
 
 api = twitter.Api(
@@ -18,8 +19,8 @@ since_id = 0
 
 
 def search(words):
+    '找有某特關鍵字的 tweets'
     global since_id
-    print('since', [since_id])
     words = words[:8]
     term = '"{}"'.format('" OR "'.join(words))
     data = dict(
@@ -30,7 +31,7 @@ def search(words):
         data['since_id'] = since_id
     statuses = api.GetSearch(**data)
 
-    # 取得最後一筆的 id
+    # 取得最後一筆的 id, 避免結果重覆
     ids = map(lambda status: status.id, statuses)
     since_id = max(ids, default=since_id)
 
@@ -42,8 +43,12 @@ def search(words):
     )
 
 
+softer = partial(normalize, value=25)
+colors = [COLOR.RED, COLOR.GREEN, COLOR.BLUE, COLOR.YELLOW, COLOR.CYAN, COLOR.MAGENTA]
+colors = list(map(softer, colors))
+
+
 with open_controller(topic='pochang/iot/neopixel') as controller:
-    colors = [COLOR.RED, COLOR.GREEN, COLOR.BLUE, COLOR.YELLOW, COLOR.CYAN, COLOR.MAGENTA]
     leds = tuple(controller.leds())
     search(keywords)  # 拿掉第一筆結果, 因為沒意義
     while True:
@@ -55,9 +60,11 @@ with open_controller(topic='pochang/iot/neopixel') as controller:
 
             print('[{}]'.format(word))
             for status in statuses:
-                print('\t', status.text)
+                print('\t', status.text[:70])  # 字數限制
         controller.flush()
         controller._reset()
 
-        time.sleep(20)
+        time.sleep(15)
+        controller.flush()
+        time.sleep(0)
         print('\n' * 5)
