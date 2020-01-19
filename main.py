@@ -1,6 +1,8 @@
 import twitter
 import time
 from credentials import ACCESS_TOKEN_KEY, ACCESS_TOKEN_SECRET, CONSUMER_KEY, CONSUMER_SECRET
+from color import COLOR
+from mqtt import open_controller
 
 api = twitter.Api(
     consumer_key=CONSUMER_KEY,
@@ -9,7 +11,7 @@ api = twitter.Api(
     access_token_secret=ACCESS_TOKEN_SECRET,
 )
 
-keywords = ['分手', 'break-up']
+keywords = ['分手', 'break-up', '別れる']
 
 
 since_id = 0
@@ -39,12 +41,23 @@ def search(words):
         for word in words
     )
 
-while True:
-    result = search(keywords)
-    for word, statuses in result:
-        print('[{}]'.format(word))
-        for status in statuses:
-            print('\t', status.text)
 
-    time.sleep(20)
-    print('\n' * 5)
+with open_controller(topic='pochang/iot/neopixel') as controller:
+    colors = [COLOR.RED, COLOR.GREEN, COLOR.BLUE, COLOR.YELLOW, COLOR.CYAN, COLOR.MAGENTA]
+    leds = tuple(controller.leds())
+    search(keywords)  # 拿掉第一筆結果, 因為沒意義
+    while True:
+        result = search(keywords)
+
+        for index, ((word, statuses), led, color) in enumerate(zip(result, leds, colors)):
+            if len(statuses):
+                led.on(color)
+
+            print('[{}]'.format(word))
+            for status in statuses:
+                print('\t', status.text)
+        controller.flush()
+        controller._reset()
+
+        time.sleep(20)
+        print('\n' * 5)
