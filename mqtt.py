@@ -27,23 +27,41 @@ class Client:
     def publish(self, topic, data):
         self.client.publish(topic, data)
 
-TOPIC_BASE = 'pochang/iot'
-topic_light = TOPIC_BASE + '/light'
-topic_neopixel = TOPIC_BASE + '/neopixel'
 
-client = Client()
-client.connect()
+class LedController:
+    def __init__(self, topic):
+        self.topic = topic
+
+    def _reset(self):
+        '重置狀態'
+        self.lights = [[0, 0, 0]] * 8
+
+    def connect(self):
+        '連線'
+        self.client = Client()
+        self.client.connect()
+
+    def flush(self):
+        '送出燈號狀態'
+        neo_cmd = {'light': self.lights, 'delay': 0}
+        neo_cmd = json.dumps(neo_cmd)
+        print('cmd: ', neo_cmd)
+        self.client.publish(self.topic, neo_cmd)
+
+    def update(self, index, R, G, B):
+        self.lights[index % 8] = [R, G, B]
+
+
+leds = LedController(topic='pochang/iot/neopixel')
+leds.connect()
 
 idx = 0
 while True:
     idx += 1
-
+    leds._reset()
     neo_light = [[0, 0, 0]] * 8
     v = 5
     for i in range(1, 5):
-        neo_light[(idx + i) % 8] = [v * i, 0, v * i]
-    neo_cmd = {'light': neo_light, 'delay': 0}
-    neo_cmd = json.dumps(neo_cmd)
-    print('cmd: ', neo_cmd)
-    client.publish(topic_neopixel, neo_cmd)
+        leds.update(idx + i, v * i, 0, v * i)
+    leds.flush()
     time.sleep(2)
