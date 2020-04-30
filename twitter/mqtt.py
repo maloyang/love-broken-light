@@ -55,12 +55,18 @@ class LedController:
         '重置狀態'
         self.lights = [[0, 0, 0]] * 8
 
-    def open(self, topic):
+    def start(self, topic):
         '連線'
         self.topic = topic
         self.client = Client()
         self.client.connect()
         self._reset()
+
+    def stop(self):
+        '關掉 led 跟離線'
+        self._reset()
+        self.flush()
+        self.client.disconnect()
 
     def flush(self):
         '送出燈號狀態'
@@ -74,37 +80,31 @@ class LedController:
         assert isinstance(rgb, RGB)
         self.lights[index % 8] = rgb
 
-    def close(self):
-        '關掉 led 跟離線'
-        self._reset()
-        self.flush()
-        self.client.disconnect()
-
-    def leds(self):
-        '取出單獨的 led 控制器'
-        for index, _ in enumerate(self.lights):
-            yield LED(controller=self, index=index)
+    def __getitem__(self, key):
+        if key >= len(self.lights):
+            raise IndexError()
+        return LED(controller=self, index=key)
 
 
 @contextmanager
-def open_controller(topic):
+def start_leds(topic):
     '自動建立連線, 自動關閉'
-    controller = LedController()
-    controller.open(topic)
+    leds = LedController()
+    leds.start(topic)
     try:
-        yield controller
+        yield leds
     finally:
-        controller.close()
+        leds.stop()
 
 
 if __name__ == '__main__':
     v = 5
-    with open_controller(topic='pochang/iot/neopixel') as controller:
-        leds = list(controller.leds())
+    with start_leds(topic='pochang/iot/neopixel') as leds:
+        queue = list(leds)
         while True:
             for i in range(5):
-                leds[i].on(RGB(v * i, 0, v * i))
-            controller.flush()
-            controller._reset()
+                queue[i].on(RGB(v * i, 0, v * i))
+            leds.flush()
+            leds._reset()
             time.sleep(2)
-            leds.append(leds.pop(0))
+            queue.append(queue.pop(0))
